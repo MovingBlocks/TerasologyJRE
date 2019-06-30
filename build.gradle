@@ -28,10 +28,19 @@ def jreUrlFilenames = [
         Mac       : 'macos-amd64.zip'
 ]
 
+task downloadJreAll {
+    group 'Download'
+    description 'Downloads JRE for all platforms'
+}
+
 jreUrlFilenames.each { os, file ->
     task "downloadJre$os"(type: Download) {
+        group 'Download'
+        description "Downloads JRE for $os"
+        
         src "$jreUrlBase-$file"
-        dest mkdir("$projectDir/jre/${os.toLowerCase()}")
+        dest "$projectDir/jre/jre-${os.toLowerCase()}.zip"
         overwrite false
     }
+    downloadJreAll.dependsOn tasks.named("downloadJre$os").get()
 }
