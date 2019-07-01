@@ -20,8 +20,8 @@ plugins {
     id 'de.undercouch.download' version '3.4.3'
 }
 
-group = 'org.terasology.jre'
-version = '0.0.1-SNAPSHOT'
+group = 'org.terasology.jre.liberica'
+version = '0.0.1'
 
 // Uses Bellsoft Liberica JRE
 def jreUrlBase = 'https://download.bell-sw.com/java/8u212/bellsoft-jre8u212'
