@@ -2,6 +2,9 @@
 /.gradle/
 /build/
 
+# Leaving this on the ignore to not accidentally get a prop file with a password checked in
+gradle.properties
+
 # Ignore IntelliJ IDEA
 *.iml
 *.ipr
