@@ -58,3 +58,17 @@ The value of `m2_path` depends on your OS:
 |----|---------|
 |Linux/Mac | `~/.m2`|
 |Windows | `C:\Users\{username}\.m2`|
+
+## Additional notes
+#### Versioning
+A JRE cannot be published to the Artifactory if the same version of that
+JRE already exists there. So the version needs to be incremented if this
+repo gets updated. This can be done by updating the global `version`
+variable inside `build.gradle`. 
+
+#### JRE vendor
+We are using [BellSoft Liberica JRE](https://bell-sw.com/pages/java-8u212/)
+(version 8u212) as the source of the original JRE packages. To use a
+different vendor, change the respective links in `jreUrlBase` and
+`jreUrlFilenames` inside `build.gradle`. Remember to update the global
+`group` variable as it contains the vendor name at the end.
