@@ -15,50 +15,77 @@
  */
 
 plugins {
-    id 'base'
-    id 'maven-publish'
-    id 'de.undercouch.download' version '3.4.3'
+    id "base"
+    id "maven-publish"
+    id "de.undercouch.download" version "3.4.3"
 }
 
-group = 'org.terasology.jre.liberica'
-version = '0.0.1'
+group = "org.terasology.jre"
+version = "1.0.0"
 
-// Uses Bellsoft Liberica JRE
-def jreUrlBase = 'https://download.bell-sw.com/java/8u212/bellsoft-jre8u212'
-def jreUrlFilenames = [
-        Linux64   : 'linux-amd64.tar.gz',
-        Linux32   : 'linux-i586.tar.gz',
-        Windows64 : 'windows-amd64.zip',
-        Windows32 : 'windows-i586.zip',
-        Mac       : 'macos-amd64.zip'
-]
+ext {
+    jreVersion = "8u212"
+    publishUrl = "http://artifactory.terasology.org/artifactory/libs-release-local"
+}
+
+enum JRE {
+    Linux32("linux-i586","tar.gz"),
+    Linux64("linux-amd64","tar.gz"),
+    MacOS("macos-amd64","zip"),
+    Windows32("windows-i586","zip"),
+    Windows64("windows-amd64","zip");
+
+    String downloadArtifact
+    String archiveExtension
+
+    public URL getDownloadURL(String jreVersion) {
+        def baseUrl = "https://download.bell-sw.com/java/${jreVersion}/bellsoft-jre${jreVersion}"
+        def downloadUrl = new URL("${baseUrl}-${this.downloadArtifact}")
+        println downloadUrl
+
+        return downloadUrl
+    }
+
+    public File getTargetArchive(File projectDir) {
+        def targetArchive = new File("${projectDir}/jres/${this.name().toLowerCase()}.${this.archiveExtension}")
+
+        return targetArchive
+    }
+
+    JRE(String filename, String extension) {
+        this.downloadArtifact = "${filename}.${extension}"
+        this.archiveExtension = extension
+    }
+}
 
 task downloadJreAll {
-    group 'Download'
-    description 'Downloads JRE for all platforms'
+    group "Download"
+    description "Downloads JRE for all platforms"
 }
 
-jreUrlFilenames.each { os, file ->
-    def jreTask = "downloadJre$os"
-    def jreZip  = "$projectDir/jre/${os.toLowerCase()}.zip"
-    
-    task "$jreTask"(type: Download) {
-        group 'Download'
-        description "Downloads JRE for $os"
+JRE.each { arch ->
 
-        src "$jreUrlBase-$file"
-        dest jreZip
+    def jreDownloadTask = task("downloadJre${arch}", type: Download) {
+        group "Download"
+        description "Downloads JRE for ${arch}"
+
+        // Uses Bellsoft Liberica JRE
+
+        src arch.getDownloadURL(jreVersion)
+        dest arch.getTargetArchive(projectDir)
         overwrite false
+        onlyIfModified true
     }
-    
-    downloadJreAll.dependsOn tasks.named(jreTask).get()
+
+    downloadJreAll.dependsOn jreDownloadTask
     
     publishing.publications {
-        "jre$os"(MavenPublication) {
-            artifact(jreZip) {
-                builtBy tasks.named(jreTask).get()
+        "jre${arch}"(MavenPublication) {
+            artifact(arch.getTargetArchive(projectDir)) {
+                builtBy jreDownloadTask
             }
-            artifactId os.toLowerCase()
+            artifactId "jre${jreVersion}-${arch.name().toLowerCase()}"
+            // TODO: customize POM
         }
     }
 }
@@ -72,7 +99,7 @@ publishing {
                     password artifactoryPass
                 }
             }
-            url "http://artifactory.terasology.org/artifactory/libs-release-local"
+            url publishUrl
         }
     }
 }
