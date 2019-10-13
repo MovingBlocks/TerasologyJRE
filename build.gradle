@@ -20,11 +20,13 @@ plugins {
     id "de.undercouch.download" version "3.4.3"
 }
 
-publishUrl = "http://artifactory.terasology.org/artifactory/libs-release-local"
 group = "org.terasology.jre"
 version = "1.0.0"
 
-jreVersion = "8u212"
+ext {
+    jreVersion = "8u212"
+    publishUrl = "http://artifactory.terasology.org/artifactory/libs-release-local"
+}
 
 enum JRE {
     Linux32("linux-i586","tar.gz"),
@@ -33,14 +35,26 @@ enum JRE {
     Windows32("windows-i586","zip"),
     Windows64("windows-amd64","zip");
 
-    URL downloadUrl
-    File targetArchive
+    String downloadArtifact
+    String archiveExtension
 
-    JRE(string filename, string extension) {
-        // Uses Bellsoft Liberica JRE
-        def baseUrl = "https://download.bell-sw.com/java/${jreVersion}"
-        this.downloadUrl = new URL("${baseUrl}/bellsoft-${jreVersion}-${filename}.${extension}")
-        this.targetArchive = new File("${projectDir}/jres/${this.class.name.toLowerCase()}.${extension}")
+    public URL getDownloadURL(String jreVersion) {
+        def baseUrl = "https://download.bell-sw.com/java/${jreVersion}/bellsoft-jre${jreVersion}"
+        def downloadUrl = new URL("${baseUrl}-${this.downloadArtifact}")
+        println downloadUrl
+
+        return downloadUrl
+    }
+
+    public File getTargetArchive(File projectDir) {
+        def targetArchive = new File("${projectDir}/jres/${this.name().toLowerCase()}.${this.archiveExtension}")
+
+        return targetArchive
+    }
+
+    JRE(String filename, String extension) {
+        this.downloadArtifact = "${filename}.${extension}"
+        this.archiveExtension = extension
     }
 }
 
@@ -55,19 +69,22 @@ JRE.each { arch ->
         group "Download"
         description "Downloads JRE for ${arch}"
 
-        src arch.downloadUrl
-        dest arch.targetArchive
+        // Uses Bellsoft Liberica JRE
+
+        src arch.getDownloadURL(jreVersion)
+        dest arch.getTargetArchive(projectDir)
         overwrite false
+        onlyIfModified true
     }
 
     downloadJreAll.dependsOn jreDownloadTask
     
     publishing.publications {
         "jre${arch}"(MavenPublication) {
-            artifact(arch.targetArchive) {
+            artifact(arch.getTargetArchive(projectDir)) {
                 builtBy jreDownloadTask
             }
-            artifactId "jre${jreVersion}-${arch.toLowerCase()}"
+            artifactId "jre${jreVersion}-${arch.name().toLowerCase()}"
             // TODO: customize POM
         }
     }
